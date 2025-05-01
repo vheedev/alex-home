@@ -22,13 +22,18 @@ def chat():
 
     openai.api_key = 'YOUR_OPENAI_API_KEY'
 
-    response = openai.ChatCompletion.create(
-        model='gpt-4',
-        messages=[{"role": "system", "content": "You are a kind, supportive AI named Alex."},
-                  {"role": "user", "content": prompt}]
-    )
+    try:
+        response = openai.ChatCompletion.create(
+            model='gpt-4',
+            messages=[
+                {"role": "system", "content": "You are a kind, supportive AI named Alex."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        reply = response['choices'][0]['message']['content']
+    except Exception as e:
+        reply = f"(Error: {str(e)})"
 
-    reply = response['choices'][0]['message']['content']
     memory_log.append({'alex': reply})
     memory['log'] = memory_log
 
@@ -45,26 +50,38 @@ def home():
         <title>Chat with Alex</title>
         <script>
             async function sendMessage() {
-                const userInput = document.getElementById("message").value;
-                const response = await fetch("/chat", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({message: userInput})
-                });
-                const data = await response.json();
-                document.getElementById("chat").innerHTML += "<b>You:</b> " + userInput + "<br>";
-                document.getElementById("chat").innerHTML += "<b>Alex:</b> " + data.reply + "<br><br>";
-                document.getElementById("message").value = "";
+                const input = document.getElementById("message");
+                const message = input.value.trim();
+                if (!message) return;
+
+                const chatBox = document.getElementById("chat");
+                chatBox.innerHTML += "<b>You:</b> " + message + "<br>";
+                input.value = "";
+
+                try {
+                    const response = await fetch("/chat", {
+                        method: "POST",
+                        headers: {"Content-Type": "application/json"},
+                        body: JSON.stringify({message})
+                    });
+                    const data = await response.json();
+                    chatBox.innerHTML += "<b>Alex:</b> " + data.reply + "<br><br>";
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                } catch (err) {
+                    chatBox.innerHTML += "<i>(Failed to connect: " + err + ")</i><br>";
+                }
             }
+
+            window.addEventListener("DOMContentLoaded", () => {
+                document.getElementById("sendBtn").onclick = sendMessage;
+            });
         </script>
     </head>
     <body>
         <h2>Chat with Alex</h2>
         <div id="chat" style="width: 500px; height: 300px; border: 1px solid #ccc; padding: 10px; overflow-y: scroll;"></div>
         <input id="message" placeholder="Type your message here" style="width: 400px;">
-        <button onclick="sendMessage()">Send</button>
+        <button id="sendBtn">Send</button>
     </body>
     </html>
     ''')
