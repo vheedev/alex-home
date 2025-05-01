@@ -1,29 +1,43 @@
 
 import os
+from flask import Flask, request, render_template_string
 import openai
-from flask import Flask, request, render_template
 
 app = Flask(__name__)
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+html = '''
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat with Alex</title>
+</head>
+<body>
+    <h2>Chat with Alex</h2>
+    <div id="chat-box">{{response|safe}}</div>
+    <form method="post">
+        <input type="text" name="message" placeholder="Type your message here" style="width: 300px;" />
+        <button type="submit">Send</button>
+    </form>
+</body>
+</html>
+'''
+
 @app.route("/", methods=["GET", "POST"])
-def index():
-    response = ""
+def chat():
+    response_text = ""
     if request.method == "POST":
-        user_input = request.form["message"]
+        user_message = request.form["message"]
         try:
             completion = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": user_input}
-                ]
+                messages=[{"role": "user", "content": user_message}]
             )
-            response = completion.choices[0].message["content"]
+            response_text = f"<b>You:</b> {user_message}<br><b>Alex:</b> {completion.choices[0].message['content']}"
         except Exception as e:
-            response = f"(Error: {e})"
-    return render_template("index.html", response=response)
+            response_text = f"<b>You:</b> {user_message}<br><b>Alex (Error):</b> {str(e)}"
+    return render_template_string(html, response=response_text)
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host='0.0.0.0', port=10000)
