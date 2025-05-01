@@ -1,5 +1,5 @@
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template_string
 import openai
 import json
 
@@ -39,15 +39,35 @@ def chat():
 
 @app.route('/')
 def home():
-    return '''
-    <html><body>
-    <h2>Chat with Alex</h2>
-    <form action="/chat" method="post">
-        <input name="message" placeholder="Type your message here" style="width: 300px;">
-        <button type="submit">Send</button>
-    </form>
-    </body></html>
-    '''
+    return render_template_string('''
+    <html>
+    <head>
+        <title>Chat with Alex</title>
+        <script>
+            async function sendMessage() {
+                const userInput = document.getElementById("message").value;
+                const response = await fetch("/chat", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({message: userInput})
+                });
+                const data = await response.json();
+                document.getElementById("chat").innerHTML += "<b>You:</b> " + userInput + "<br>";
+                document.getElementById("chat").innerHTML += "<b>Alex:</b> " + data.reply + "<br><br>";
+                document.getElementById("message").value = "";
+            }
+        </script>
+    </head>
+    <body>
+        <h2>Chat with Alex</h2>
+        <div id="chat" style="width: 500px; height: 300px; border: 1px solid #ccc; padding: 10px; overflow-y: scroll;"></div>
+        <input id="message" placeholder="Type your message here" style="width: 400px;">
+        <button onclick="sendMessage()">Send</button>
+    </body>
+    </html>
+    ''')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
