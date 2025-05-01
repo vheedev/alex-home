@@ -1,17 +1,15 @@
+
 from flask import Flask, request, render_template_string
 import openai
 import os
 
 app = Flask(__name__)
-
-# Load API key from environment
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Load Alex V1.0 personality from file
-with open("alex_personality_prompt.txt", "r", encoding="utf-8") as f:
+# Load Alex final personality prompt from correct file
+with open("alex_final_personality_prompt.txt", "r", encoding="utf-8") as f:
     alex_personality = f.read()
 
-# HTML template with message box
 html_template = """
 <!DOCTYPE html>
 <html>
@@ -20,10 +18,10 @@ html_template = """
 </head>
 <body>
     <h1>Chat with Alex</h1>
-    <div style="width: 100%; height: 300px; overflow-y: scroll; border: 1px solid #ccc;" id="chatbox">{{chatlog|safe}}</div>
-    <form method="post">
-        <input name="message" style="width: 80%;" placeholder="Type your message here" autofocus>
-        <input type="submit" value="Send">
+    <div style='width: 100%%; height: 300px; overflow-y: scroll; border: 1px solid #ccc;'>{{ chatlog|safe }}</div>
+    <form method='post'>
+        <input name='message' style='width: 80%%;' placeholder='Type your message here' autofocus>
+        <input type='submit' value='Send'>
     </form>
 </body>
 </html>
@@ -51,7 +49,7 @@ def index():
             reply = f"<i>(Error: {e})</i>"
 
         chat_history.append("<b>Alex:</b> {}".format(reply.replace("\n", "<br>")))
-    
+
     rendered_chat = "<br>".join(chat_history[-20:])
     return render_template_string(html_template, chatlog=rendered_chat)
 
