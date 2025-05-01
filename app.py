@@ -1,11 +1,10 @@
-
 from flask import Flask, request, render_template_string
 import openai
+import os
 
 app = Flask(__name__)
 
 # Load API key from environment
-import os
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Load Alex V1.0 personality from file
@@ -13,7 +12,7 @@ with open("alex_personality_prompt.txt", "r", encoding="utf-8") as f:
     alex_personality = f.read()
 
 # HTML template with message box
-html_template = '''
+html_template = """
 <!DOCTYPE html>
 <html>
 <head>
@@ -28,7 +27,7 @@ html_template = '''
     </form>
 </body>
 </html>
-'''
+"""
 
 chat_history = []
 
@@ -51,7 +50,7 @@ def index():
         except Exception as e:
             reply = f"<i>(Error: {e})</i>"
 
-        chat_history.append(f"<b>Alex:</b> {reply.replace('\n', '<br>')}")
+        chat_history.append("<b>Alex:</b> {}".format(reply.replace("\n", "<br>")))
     
     rendered_chat = "<br>".join(chat_history[-20:])
     return render_template_string(html_template, chatlog=rendered_chat)
