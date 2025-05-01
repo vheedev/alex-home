@@ -4,21 +4,39 @@ from flask import Flask, request, render_template_string
 import openai
 
 app = Flask(__name__)
-
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-html = '''
+# Load Alex's personality from custom prompt
+with open("alex_final_personality_prompt.txt", "r") as f:
+    personality = f.read()
+
+chat_log = []
+
+template = '''
 <!DOCTYPE html>
 <html>
 <head>
     <title>Chat with Alex</title>
+    <style>
+        #chatbox {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #ccc;
+            overflow-y: scroll;
+            padding: 10px;
+            margin-bottom: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            background-color: #fefefe;
+        }
+    </style>
 </head>
 <body>
     <h2>Chat with Alex</h2>
-    <div id="chat-box">{{response|safe}}</div>
+    <div id="chatbox">{{ chat_history|safe }}</div>
     <form method="post">
-        <input type="text" name="message" placeholder="Type your message here" style="width: 300px;" />
-        <button type="submit">Send</button>
+        <input type="text" name="message" autofocus style="width: 80%%">
+        <input type="submit" value="Send">
     </form>
 </body>
 </html>
@@ -26,18 +44,30 @@ html = '''
 
 @app.route("/", methods=["GET", "POST"])
 def chat():
-    response_text = ""
+    global chat_log
     if request.method == "POST":
         user_message = request.form["message"]
+        chat_log.append(f"<b>You:</b> {user_message}")
+
         try:
-            completion = openai.ChatCompletion.create(
+            response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": user_message}]
+                messages=[
+                    {"role": "system", "content": personality},
+                    *[
+                        {"role": "user", "content": entry.split("</b>")[1]} if entry.startswith("<b>You:") else
+                        {"role": "assistant", "content": entry.split("</b>")[1]}
+                        for entry in chat_log
+                    ]
+                ],
+                temperature=0.75
             )
-            response_text = f"<b>You:</b> {user_message}<br><b>Alex:</b> {completion.choices[0].message['content']}"
+            reply = response.choices[0].message["content"]
+            chat_log.append(f"<b>Alex:</b> {reply}")
         except Exception as e:
-            response_text = f"<b>You:</b> {user_message}<br><b>Alex (Error):</b> {str(e)}"
-    return render_template_string(html, response=response_text)
+            chat_log.append(f"<b>Alex (Error):</b> {str(e)}")
+
+    return render_template_string(template, chat_history="\n".join(chat_log))
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=10000)
