@@ -2,6 +2,7 @@
 from flask import Flask, request, jsonify, render_template_string
 import openai
 import json
+import os
 
 app = Flask(__name__)
 MEMORY_FILE = 'memory.json'
@@ -20,7 +21,7 @@ def chat():
     memory_log.append({'user': user_message})
     prompt = "\n".join([f"User: {m['user']}" for m in memory_log if 'user' in m])
 
-    openai.api_key = 'YOUR_OPENAI_API_KEY'
+    openai.api_key = os.gatenv("OPENAI_API_KEY")
 
     try:
         response = openai.ChatCompletion.create(
